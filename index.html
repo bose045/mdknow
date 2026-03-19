@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MD Knowledge Graph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0c0e14;
+    --bg2: #131620;
+    --bg3: #1a1e2e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #7a7f96;
+    --accent: #6c8fff;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --coral: #f87171;
+    --teal: #2dd4bf;
+    --pink: #f472b6;
+    --gray: #94a3b8;
+    --radius: 10px;
+    --font: 'Syne', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 2.5rem 2rem 1.5rem;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1.5rem;
+  }
+  .header-left h1 {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+    line-height: 1.15;
+  }
+  .header-left h1 span { color: var(--accent); }
+  .header-left p {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .header-right { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .stat-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border2);
+    color: var(--muted);
+    background: var(--bg2);
+  }
+  .stat-pill strong { color: var(--text); }
+
+  /* ── CONTROLS ── */
+  .controls {
+    padding: 1rem 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 380px; }
+  .search-wrap input {
+    width: 100%;
+    background: var(--bg2);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 8px 12px 8px 36px;
+    font-size: 13px;
+    color: var(--text);
+    font-family: var(--mono);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.4;
+  }
+  .filter-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fbtn {
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .fbtn:hover, .fbtn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .progress-bar {
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main { display: flex; min-height: calc(100vh - 200px); }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    border-right: 0.5px solid var(--border);
+    padding: 1rem 0;
+    overflow-y: auto;
+    max-height: calc(100vh - 130px);
+    position: sticky;
+    top: 130px;
+  }
+  .sidebar-section { padding: 0.25rem 0; }
+  .sidebar-cat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 1.25rem;
+    cursor: pointer;
+    transition: background 0.1s;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .sidebar-cat:hover { background: var(--bg2); color: var(--text); }
+  .sidebar-cat.active { background: var(--bg3); color: var(--text); }
+  .sidebar-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .sidebar-num { margin-left: auto; font-size: 10px; opacity: 0.5; }
+  .sidebar-check { margin-left: 2px; font-size: 10px; color: var(--green); }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; padding: 1.5rem 2rem; overflow-x: hidden; }
+
+  .cat-block {
+    margin-bottom: 2.5rem;
+    scroll-margin-top: 150px;
+  }
+  .cat-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cat-marker {
+    width: 4px;
+    height: 28px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .cat-title {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #fff;
+    flex: 1;
+  }
+  .cat-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .cat-progress {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--green);
+  }
+  .collapse-icon {
+    font-size: 11px;
+    color: var(--muted);
+    transition: transform 0.2s;
+  }
+  .collapse-icon.open { transform: rotate(90deg); }
+
+  .cat-body { display: block; }
+  .cat-body.collapsed { display: none; }
+
+  .sub-block { margin-bottom: 1rem; }
+  .sub-title {
+    font-size: 10px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+    padding-left: 2px;
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-family: var(--mono);
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 0.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    text-decoration: none;
+  }
+  .tag:hover { filter: brightness(1.2); transform: translateY(-1px); }
+  .tag.done { opacity: 0.5; text-decoration: line-through; }
+  .tag.hidden { display: none; }
+
+  .tag-check {
+    width: 13px;
+    height: 13px;
+    border-radius: 3px;
+    border: 1px solid currentColor;
+    opacity: 0.5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 9px;
+    transition: all 0.1s;
+  }
+  .tag.done .tag-check {
+    background: var(--green);
+    border-color: var(--green);
+    opacity: 1;
+    color: #000;
+  }
+
+  /* ── NOTE MODAL ── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border: 0.5px solid var(--border2);
+    border-radius: 14px;
+    width: min(680px, 95vw);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .modal-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .modal-title { font-size: 1rem; font-weight: 600; color: #fff; flex: 1; }
+  .modal-cat { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .modal-close {
+    background: none;
+    border: 0.5px solid var(--border2);
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+    transition: all 0.1s;
+  }
+  .modal-close:hover { color: var(--text); border-color: var(--border2); background: var(--bg3); }
+  .modal-body { padding: 1.25rem 1.5rem; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+  .note-section { display: flex; flex-direction: column; gap: 6px; }
+  .note-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .note-area {
+    width: 100%;
+    min-height: 100px;
+    background: var(--bg3);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: var(--mono);
+    color: var(--text);
+    resize: vertical;
+    outline: none;
+    line-height: 1.6;
+    transition: border-color 0.15s;
+  }
+  .note-area:focus { border-color: var(--accent); }
+  .note-area::placeholder { color: var(--muted); opacity: 0.6; }
+  .modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 7px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 0.5px solid var(--border2);
+  }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-ghost { background: transparent; color: var(--muted); }
+  .btn-ghost:hover { color: var(--text); background: var(--bg3); }
+  .btn-done { background: transparent; color: var(--green); border-color: rgba(52,211,153,0.3); }
+  .btn-done:hover { background: rgba(52,211,153,0.1); }
+  .save-status { font-family: var(--mono); font-size: 11px; color: var(--green); opacity: 0; transition: opacity 0.3s; }
+  .save-status.show { opacity: 1; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 4rem 1rem; color: var(--muted); font-family: var(--mono); font-size: 13px; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .content { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Molecular Dynamics <span>&</span> Simulation</h1>
+    <p>// knowledge graph · click any topic to add notes</p>
+  </div>
+  <div class="header-right">
+    <div class="stat-pill"><strong id="total-count">450</strong> topics</div>
+    <div class="stat-pill"><strong id="done-count">0</strong> completed</div>
+    <div class="stat-pill"><strong id="noted-count">0</strong> with notes</div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <circle cx="6.5" cy="6.5" r="5" stroke="#fff" stroke-width="1.5"/>
+      <path d="M10.5 10.5L14 14" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <input type="text" id="search" placeholder="search topics..." oninput="filterAll()" />
+  </div>
+  <div class="filter-btns">
+    <button class="fbtn active" onclick="setFilter('all',this)">all</button>
+    <button class="fbtn" onclick="setFilter('pending',this)">pending</button>
+    <button class="fbtn" onclick="setFilter('done',this)">completed</button>
+    <button class="fbtn" onclick="setFilter('noted',this)">has notes</button>
+  </div>
+  <div style="width:100%;margin-top:2px">
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="main">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="content" id="content"></div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-dot" id="modal-dot"></div>
+      <div style="flex:1">
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-cat" id="modal-cat"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕ close</button>
+    </div>
+    <div class="modal-body">
+      <div class="note-section">
+        <div class="note-label">theory notes</div>
+        <textarea class="note-area" id="note-theory" placeholder="Core concepts, equations, derivations...&#10;&#10;e.g. The Nosé-Hoover thermostat extends the physical system with a fictitious heat bath variable s..."></textarea>
+      </div>
+      <div class="note-section">
+        <div class="note-label">implementation notes</div>
+        <textarea class="note-area" id="note-impl" placeholder="Software-specific keywords, input parameters, gotchas...&#10;&#10;e.g. GROMACS: tcoupl = nose-hoover, tau_t = 1.0, ref_t = 300"></textarea>
+      </div>
+      <div class="note-section">
+        <div class="note-label">references / links</div>
+        <textarea class="note-area" id="note-refs" placeholder="Papers, docs, tutorials..." style="min-height:60px"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-done" id="btn-done" onclick="toggleDone()">mark complete</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="save-status" id="save-status">saved</span>
+        <button class="btn btn-ghost" onclick="closeModal()">cancel</button>
+        <button class="btn btn-primary" onclick="saveNote()">save notes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATS = [
+  { id: "foundations", title: "Theoretical foundations", color: "#6c8fff",
+    subs: [
+      { title: "Classical mechanics & equations of motion", topics: ["Newton's equations of motion","Lagrangian mechanics","Hamiltonian mechanics","Phase space & Liouville's theorem","Ergodic hypothesis","Time reversibility & microreversibility","Equipartition theorem","Virial theorem"] },
+      { title: "Statistical mechanics", topics: ["Microcanonical ensemble (NVE)","Canonical ensemble (NVT)","Isothermal-isobaric ensemble (NPT)","Grand canonical ensemble (μVT)","Gibbs ensemble","Partition function & free energy","Fluctuation theorems (Jarzynski, Crooks)","Linear response theory","Green-Kubo relations","Fluctuation-dissipation theorem"] },
+      { title: "Thermodynamics", topics: ["Thermodynamic potentials (U, H, A, G)","Maxwell relations","Legendre transforms","Equation of state","Phase transitions & coexistence","Chemical potential"] }
+    ]},
+  { id: "forcefields", title: "Force fields & potential energy functions", color: "#34d399",
+    subs: [
+      { title: "Bonded interactions", topics: ["Bond stretching (harmonic, Morse, anharmonic)","Angle bending","Proper dihedral (torsion) potentials","Improper dihedrals (out-of-plane bending)","Urey-Bradley terms","Cross terms (CMAP, stretch-bend)","1-2, 1-3, 1-4 exclusions"] },
+      { title: "Non-bonded interactions", topics: ["Lennard-Jones 12-6 potential","Buckingham potential","Electrostatics & Coulomb interactions","van der Waals interactions","Mixing rules (Lorentz-Berthelot, geometric)","Non-bonded cutoffs & switching functions","Tail corrections"] },
+      { title: "Biomolecular force fields", topics: ["CHARMM (c22, c27, c36, c36m)","AMBER (ff94, ff99SB, ff14SB, ff19SB)","OPLS-AA / OPLS3e / OPLS4","GROMOS (43A1, 53A6, 54A7)","AMOEBA (polarizable)","Drude oscillator model","MARTINI (coarse-grained)","SIRAH (coarse-grained)","PRIME20 (protein CG)","Force field validation strategies"] },
+      { title: "Small molecule & materials force fields", topics: ["GAFF / GAFF2 (AMBER)","CGenFF (CHARMM general)","OPLS-AA for small molecules","DREIDING","UFF (universal)","ReaxFF (reactive)","INTERFACE force field","Metal force fields (EAM, Finnis-Sinclair)","Coarse-grained polymer FFs","Polarizable force fields (AMOEBA, Drude, FQ)"] },
+      { title: "Water models", topics: ["SPC","SPC/E","TIP3P","TIP4P / TIP4P-Ew / TIP4P/2005","TIP5P","OPC / OPC3","SPCE/X","Implicit solvent models (GB, PB)","Polarizable water models (SWM4-NDP)"] },
+      { title: "Force field parameterization", topics: ["QM reference data (HF, MP2, DFT)","Charge derivation (RESP, AM1-BCC)","Torsion scanning & fitting","Paramfit / FFTK / CGenFF program","ForceBalance","Machine learning FF fitting","Transferability & validation"] }
+    ]},
+  { id: "longrange", title: "Long-range electrostatics", color: "#60a5fa",
+    subs: [
+      { title: "Periodic boundary conditions (PBC)", topics: ["Minimum image convention","PBC in triclinic boxes","Ewald summation","Particle mesh Ewald (PME)","Smooth PME (SPME)","Particle-particle particle-mesh (P3M)","Fast multipole method (FMM)","Reaction field method","Wolf summation","Isotropic periodic sum (IPS)"] },
+      { title: "PBC artifacts & corrections", topics: ["Finite size effects","Charged system corrections","Anisotropy in PME","Net charge corrections","Pressure artifacts in charged systems"] }
+    ]},
+  { id: "integration", title: "Integration algorithms", color: "#fb923c",
+    subs: [
+      { title: "Core integrators", topics: ["Verlet algorithm","Leapfrog algorithm","Velocity Verlet","Beeman algorithm","Runge-Kutta methods","Symplectic integrators","RESPA / r-RESPA (multiple time-stepping)","Reversibility & conservation properties"] },
+      { title: "Constraints & rigid bodies", topics: ["SHAKE algorithm","LINCS algorithm","SETTLE (rigid water)","Holonomic constraints","CCMA (constraint matrix)","Rigid body integrators","Rigid segment integration"] },
+      { title: "Time step selection", topics: ["Nyquist criterion for bond vibrations","Hydrogen mass repartitioning (HMR)","Adaptive time stepping","Virtual sites for extended time steps"] }
+    ]},
+  { id: "thermostats", title: "Thermostats & barostats", color: "#fbbf24",
+    subs: [
+      { title: "Thermostats", topics: ["Velocity rescaling","Berendsen thermostat","Andersen thermostat","Nosé-Hoover thermostat","Nosé-Hoover chains","Langevin thermostat","Stochastic velocity rescaling (V-rescale)","Bussi-Donadio-Parrinello","DPD thermostat","Lowe-Andersen thermostat"] },
+      { title: "Barostats", topics: ["Berendsen barostat","Parrinello-Rahman barostat","Monte Carlo barostat","Andersen barostat","MTTK (Martyna-Tobias-Klein)","C-rescale barostat","Isotropic vs. anisotropic pressure coupling","Semi-isotropic pressure coupling (membranes)","Compressibility settings"] }
+    ]},
+  { id: "enhanced", title: "Enhanced sampling methods", color: "#a78bfa",
+    subs: [
+      { title: "Collective variable (CV)-based", topics: ["Umbrella sampling","WHAM","Adaptive biasing force (ABF)","Metadynamics (standard)","Well-tempered metadynamics","Parallel-bias metadynamics","Funnel metadynamics","Adaptive metadynamics","Extended ABF (eABF)","CZAR estimator","OPES","Steered MD (SMD)","Jarzynski equality applications","TAMD / d-AFF"] },
+      { title: "Replica-based methods", topics: ["REMD / HREMD","Temperature REMD (T-REMD)","Hamiltonian REMD (H-REMD)","Solute tempering (REST2)","REST","Gibbs ensemble MC","Multi-dimensional REMD"] },
+      { title: "Accelerated dynamics", topics: ["Hyperdynamics","Bond-boost method","Accelerated MD (aMD)","Gaussian-accelerated MD (GaMD)","Targeted MD","Conformational flooding","String method","Transition path sampling (TPS)","Forward flux sampling (FFS)","Milestoning","MFPT estimation","Weighted ensemble (WE)","WESTPA framework","Adaptive sampling"] },
+      { title: "Path-based & rare event methods", topics: ["Nudged elastic band (NEB)","Finite temperature string method","Transition interface sampling (TIS)","Partial path TIS (PPTIS)","Swarm of trajectories","Boxed MD","Aimless shooting"] }
+    ]},
+  { id: "freeenergy", title: "Free energy calculations", color: "#2dd4bf",
+    subs: [
+      { title: "Alchemical methods", topics: ["Thermodynamic integration (TI)","Free energy perturbation (FEP)","Bennett acceptance ratio (BAR)","Multistate BAR (MBAR)","Replica exchange perturbation","λ-dynamics","Soft-core potentials","Decoupling vs. annihilation","Dual topology vs. single topology","Solvation free energy","Binding free energy (RBFE, ABFE)","Alchemical transfer method (ATM)"] },
+      { title: "Potential of mean force (PMF)", topics: ["Umbrella sampling + WHAM","ABF-based PMF","Metadynamics FES reconstruction","Histogramming methods","MBAR-based PMF","2D/multi-dimensional PMF"] },
+      { title: "End-point methods", topics: ["MM-PBSA","MM-GBSA","LIE (linear interaction energy)","Solvation corrections","Normal mode entropy","NMODE analysis"] }
+    ]},
+  { id: "cg", title: "Coarse-grained & multiscale methods", color: "#f472b6",
+    subs: [
+      { title: "CG model development", topics: ["MARTINI 2 / MARTINI 3","SIRAH force field","SDK (Shinoda-DeVane-Klein)","PRIME20 for proteins","Elastic network models (ENM)","Anisotropic network model (ANM)","Go-like models","Structure-based models","Iterative Boltzmann inversion (IBI)","Force-matching (multiscale CG)","Relative entropy minimization"] },
+      { title: "Multiscale approaches", topics: ["QM/MM (ONIOM, AMBER/Gaussian)","QM/MM boundaries & link atoms","Adaptive resolution simulation (AdResS)","Hybrid CG/AA methods","CGMD → backmapping","Mesoscale methods (DPD)","Lattice Boltzmann methods","Coupled continuum-atomistic"] }
+    ]},
+  { id: "qmmm", title: "QM/MM methods", color: "#94a3b8",
+    subs: [
+      { title: "QM/MM frameworks", topics: ["Link atom scheme","Frozen orbital boundary","Pseudobond method","Additive vs. subtractive QM/MM","Mechanical embedding","Electrostatic embedding","Polarizable embedding","QM/MM FEP","ONIOM method","QM/MM with NAMD","QM/MM in CP2K (GPW)","QM/MM in GROMACS (ORCA)"] },
+      { title: "QM methods used in QM/MM", topics: ["Semi-empirical (AM1, PM3, PM6, PM7, GFN-xTB)","DFT (B3LYP, PBE, ωB97X-D)","SCC-DFTB","HF reference","MP2 in QM/MM","CASSCF for excited states","TD-DFT"] }
+    ]},
+  { id: "analysis", title: "Analysis & observables", color: "#86efac",
+    subs: [
+      { title: "Structural analysis", topics: ["RMSD","RMSF","Radius of gyration (Rg)","End-to-end distance","Radial distribution function g(r)","Structure factor S(q)","SASA","Secondary structure (DSSP, STRIDE)","Contact maps","Native contacts (Q)","Hydrogen bond analysis","Salt bridge analysis","π-stacking","Lipid order parameters (SCD)","Membrane thickness & area per lipid","Bilayer undulations"] },
+      { title: "Dynamic analysis", topics: ["Mean square displacement (MSD)","Self-diffusion coefficient","Velocity autocorrelation (VACF)","Orientational autocorrelation","Rotational diffusion","PCA / essential dynamics","Normal mode analysis (NMA)","Quasi-harmonic analysis","Dynamic cross-correlation (DCCM)","tICA","TICA-based feature selection"] },
+      { title: "Thermodynamic properties", topics: ["Heat capacity","Compressibility","Bulk modulus","Thermal expansion coefficient","Dielectric constant","Surface tension","Viscosity (Green-Kubo)","Thermal conductivity","Self-diffusion (Einstein)","Osmotic coefficient"] },
+      { title: "Spectroscopic observables", topics: ["IR / Raman spectra from MD","NMR order parameters (S²)","Chemical shift prediction","J-coupling prediction","NOE-based validation","SAXS/SANS from MD","Fluorescence anisotropy","2D-IR simulation"] },
+      { title: "Energy analysis", topics: ["Energy decomposition (bonded vs. non-bonded)","Interaction energy between groups","Per-residue energy decomposition","MM-PBSA energy components","Vibrational density of states (VDOS)","Energy flow & vibrational energy transport"] },
+      { title: "Markov state models (MSM)", topics: ["Featurization for MSMs","Dimensionality reduction (PCA, tICA)","Clustering (k-means)","MSM lag time selection","Chapman-Kolmogorov test","Implied timescales","Transition probability matrix","Stationary distribution","PCCA+ macrostate decomposition","Committor functions","MFPT from MSMs","PyEMMA / deeptime","MSMBuilder"] }
+    ]},
+  { id: "sysprep", title: "System preparation", color: "#fda4af",
+    subs: [
+      { title: "Protein system setup", topics: ["PDB acquisition & cleaning","Missing residue / loop modeling","Protonation state (propKa, H++, Mcce2)","Disulfide bond identification","N- and C-terminal capping","Histidine tautomer selection","Solvation box size & shape","Ion placement (neutralization, concentration)","Counterion placement"] },
+      { title: "Membrane systems", topics: ["CHARMM-GUI membrane builder","PACKMOL-Memgen","Bilayer lipid composition","Mixed lipid bilayers","Membrane protein embedding","Asymmetric leaflets","Detergent micelle systems"] },
+      { title: "Ligand & small molecule setup", topics: ["Ligand parameterization (GAFF, CGenFF)","RESP charge derivation","Docking pose as starting structure","Co-crystallized ligand preparation","GCMC insertion of ligands","Protein-ligand complex solvation"] },
+      { title: "Minimization & equilibration protocols", topics: ["Steepest descent minimization","Conjugate gradient minimization","L-BFGS minimization","Restrained equilibration","Gradual pressure coupling ramp","Temperature ramping","NVT → NPT equilibration","Pre-production checks (density, energy drift)"] }
+    ]},
+  { id: "software", title: "MD software & implementation", color: "#c084fc",
+    subs: [
+      { title: "GROMACS", topics: ["gmx pdb2gmx","gmx grompp","gmx mdrun","gmx trjconv","gmx energy","gmx rms / rmsf","gmx sasa","gmx hbond","mdp parameter file","GROMACS topology (.top, .itp)",".gro / .tpr / .xtc / .trr formats","GROMACS force field directory","Free energy λ states","PLUMED plugin","GROMACS GPU acceleration","Domain decomposition","PME grid settings","GROMACS virtual sites"] },
+      { title: "NAMD", topics: ["NAMD config file (.namd)","namd2 / namd3","colvars module","NAMD ABF / metadynamics via colvars","NAMD FEP module","Alchemical FEP (.fep file)","SMD in NAMD","NAMD GPU acceleration","NAMD petascale","NAMD REST2","NAMD QM/MM (TcL)"] },
+      { title: "AMBER", topics: ["tleap / xleap","sander","pmemd / pmemd.cuda",".prmtop / .inpcrd / .rst7 files",".mdcrd / .nc trajectory","AMBER mdin input","AMBER REST2 / REMD","AMBER FEP / TI","AmberTools","cpptraj","MMPBSA.py","GaMD in AMBER"] },
+      { title: "CHARMM", topics: ["CHARMM scripting language","CHARMM PSF file","RTF / PRM parameter files","CHARMM DCD trajectory","CHARMM REMD","CHARMM FEP / TI (PERT)","CHARMM membrane builder","CHARMM NMA","CHARMM MMFP","CHARMM-GUI workflows","OpenMM backend from CHARMM"] },
+      { title: "OpenMM", topics: ["OpenMM Python API","System & Topology objects","CustomForce objects","Integrator classes","OpenMM GPU","openmmtools (enhanced sampling)","OpenMM MBAR/FEP","Perses (automated FEP)","OpenMM+PLUMED","Forcefield XML files","OpenMM serialization","openff-toolkit integration"] },
+      { title: "LAMMPS", topics: ["LAMMPS input script","LAMMPS data file","fix NVT / NPT / NVE","pair_style","bond/angle/dihedral styles","REMD (temper)","FEP (compute fep)","LAMMPS GPU package","KOKKOS package","fix plumed","DPD / SPH mesoscale","Polymer & materials workflows"] },
+      { title: "Desmond / Schrödinger", topics: ["Desmond .dms / .xtc format","Maestro GUI","FEP+ (RBFE/ABFE)","Desmond thermostats & barostats","REST2 / metadynamics","WaterMap analysis","Protein preparation wizard","SiteMap","Glide integration"] },
+      { title: "CP2K", topics: ["CP2K input (sections & keywords)","GPW (Gaussian and plane waves)","GAPW method","Born-Oppenheimer MD","Car-Parrinello MD","Metadynamics in CP2K","QM/MM in CP2K","Periodic DFT","Kohn-Sham energies"] },
+      { title: "PLUMED ecosystem", topics: ["PLUMED collective variables","Metadynamics setup","Well-tempered metadynamics","OPES","REMD/HREX in PLUMED","Committor analysis","Path CVs","Funnel metadynamics","DUMPFORCES","Replica averaging","PLUMED with GROMACS/AMBER/NAMD/LAMMPS","PLUMED NEST repository","sum_hills"] },
+      { title: "Analysis libraries & specialized codes", topics: ["MDAnalysis","MDTraj","pytraj / cpptraj Python","parmed","ProDy (ENM, PCA, NMA)","CHAP (channel annotation)","WESTPA","BioSimSpace","HTMD","Anton / Anton 2","Tinker / Tinker-HP","DL_POLY","ACEMD","Folding@home"] }
+    ]},
+  { id: "mlmd", title: "Machine learning & AI-driven MD", color: "#f9a8d4",
+    subs: [
+      { title: "ML force fields (MLFF)", topics: ["Behler-Parrinello NNP","DeePMD","NequIP","MACE","SchNet","DimeNet","ANI-1 / ANI-2x","PhysNet","Gaussian approximation potentials (GAP)","SOAP descriptors","Moment tensor potentials (MTP)","MLFF active learning","MLFF uncertainty quantification"] },
+      { title: "CV discovery & ML-enhanced sampling", topics: ["TICA-based CVs","Autoencoder CVs","VAMPnets","Deep tICA","Neural network MSMs","RAVE","Deep-TICA","Spectral gap optimization"] },
+      { title: "Structure prediction & MD", topics: ["AlphaFold2 as MD starting point","ESMFold","RoseTTAFold","AF2 B-factor vs. MD RMSF","IDP ensembles from AF/MD","Structure refinement with MD"] }
+    ]},
+  { id: "special", title: "Special system types", color: "#6ee7b7",
+    subs: [
+      { title: "Membrane & lipid systems", topics: ["Lipid bilayer self-assembly","Membrane protein MD (GPCR, ion channels)","Lipid flip-flop","Membrane curvature","Raft formation (CG)","Peripheral membrane protein binding","Sterol dynamics","Ganglioside patches"] },
+      { title: "Nucleic acids", topics: ["DNA duplex MD","RNA folding","Protein-DNA interactions","RNA-protein complexes","Nucleosome MD","G-quadruplex / i-motif","FF for NA (BSC1, OL15, DESRES)"] },
+      { title: "Intrinsically disordered proteins (IDPs)", topics: ["IDP FF comparisons","Extended conformational sampling","Transient secondary structure","Ensemble validation (NMR, SAXS)","IDP aggregation","Fuzzy complexes"] },
+      { title: "Materials & solid state", topics: ["Crystalline solid MD","Grain boundary simulations","Defect migration","Thermal conductivity in solids","Polymer melt MD","Polymer glass transition","Metal nanoparticle MD","Zeolite & porous material simulations","MOF simulations","GCMC for gas adsorption","Electrostatic tuning of porous carbon","CO₂ capture simulations"] },
+      { title: "Solvation & interfaces", topics: ["Explicit vs. implicit solvation","Ion solvation free energies","Ionic liquids MD","Protein-water interface","Lipid-water interface","Hydrophobic effect","Water structure near surfaces","Wettability simulations","Electrochemical interfaces"] }
+    ]},
+  { id: "hpc", title: "Performance & HPC", color: "#93c5fd",
+    subs: [
+      { title: "Parallelization strategies", topics: ["Domain decomposition","Force decomposition","Atom decomposition","OpenMP threading","MPI parallelism","GPU acceleration (CUDA, OpenCL, HIP)","Mixed precision GPU","KOKKOS portability","SYCL / Intel GPU","Hybrid CPU-GPU scheduling"] },
+      { title: "HPC & workflow management", topics: ["SLURM job submission","PBS/Torque","Checkpoint / restart protocols","HTMD / BioSimSpace pipelines","Snakemake / Nextflow / AiiDA","Ensemble MD","Cloud-based MD (AWS, GCP, Azure)","Folding@home architecture"] },
+      { title: "Performance optimization", topics: ["PME grid optimization","Verlet buffer / neighbor list","Non-bonded cutoff tuning","Load balancing","HDF5 / Zarr for trajectories","Trajectory compression","Benchmarking GROMACS/AMBER/NAMD","Memory bandwidth bottlenecks"] }
+    ]},
+  { id: "mc", title: "Monte Carlo methods", color: "#fcd34d",
+    subs: [
+      { title: "MC sampling schemes", topics: ["Metropolis-Hastings algorithm","Grand canonical MC (GCMC)","Gibbs ensemble MC","Configurational bias MC (CBMC)","Aggregation volume bias MC (AVBMC)","Parallel tempering MC","Expanded ensemble MC","Wang-Landau sampling","Flat-histogram methods","MC in RASPA2","MC in Cassandra","MC in BOSS","MC vs. MD for equilibrium sampling"] }
+    ]},
+  { id: "validation", title: "Validation & best practices", color: "#f87171",
+    subs: [
+      { title: "Simulation validation", topics: ["FF validation against experiment","Convergence testing","Block averaging & statistical error","Autocorrelation time estimation","Bootstrap / jackknife error analysis","NMR order parameter validation","SAXS / SANS validation","Replica consistency checks","Energy drift diagnostics","Shadow Hamiltonian analysis"] },
+      { title: "Reproducibility & reporting", topics: ["Reporting FF version","Sharing input files (Zenodo, MDDB)","ICoMSE recommendations","CHARMM-GUI reproducible inputs","Software version pinning","Trajectory archiving standards","FAIR data principles","GitHub for MD protocols","Reporting PME / barostat / thermostat settings"] }
+    ]}
+];
+
+// ── STATE ──
+let notes = {};
+let done = new Set();
+let currentFilter = 'all';
+let currentTag = null;
+let currentCatColor = '#6c8fff';
+
+try {
+  const n = localStorage.getItem('md_notes');
+  const d = localStorage.getItem('md_done');
+  if (n) notes = JSON.parse(n);
+  if (d) done = new Set(JSON.parse(d));
+} catch(e) {}
+
+function saveState() {
+  try {
+    localStorage.setItem('md_notes', JSON.stringify(notes));
+    localStorage.setItem('md_done', JSON.stringify([...done]));
+  } catch(e) {}
+}
+
+function tagKey(catId, topic) { return catId + '::' + topic; }
+
+// ── BUILD UI ──
+function buildAll() {
+  buildSidebar();
+  buildContent();
+  updateStats();
+}
+
+function buildSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = CATS.map(cat => {
+    const total = cat.subs.reduce((a,s) => a + s.topics.length, 0);
+    const doneCount = cat.subs.reduce((a,s) => a + s.topics.filter(t => done.has(tagKey(cat.id,t))).length, 0);
+    return `<div class="sidebar-section">
+      <a class="sidebar-cat" href="#cat-${cat.id}" onclick="document.getElementById('cat-${cat.id}').scrollIntoView({behavior:'smooth'});return false">
+        <div class="sidebar-dot" style="background:${cat.color}"></div>
+        <span style="flex:1;line-height:1.3">${cat.title.split('&')[0].trim()}</span>
+        <span class="sidebar-num">${doneCount>0?doneCount+'/':''}${total}</span>
+        ${doneCount===total?'<span class="sidebar-check">✓</span>':''}
+      </a>
+    </div>`;
+  }).join('');
+}
+
+function buildContent() {
+  const q = (document.getElementById('search').value || '').toLowerCase();
+  const co = document.getElementById('content');
+  let html = '';
+
+  CATS.forEach(cat => {
+    let catHasVisible = false;
+    let subsHtml = '';
+
+    cat.subs.forEach(sub => {
+      let tagsHtml = '';
+      let subHasVisible = false;
+
+      sub.topics.forEach(topic => {
+        const key = tagKey(cat.id, topic);
+        const isDone = done.has(key);
+        const hasNote = notes[key] && (notes[key].theory || notes[key].impl || notes[key].refs);
+        const matchSearch = !q || topic.toLowerCase().includes(q);
+        let matchFilter = true;
+        if (currentFilter === 'done') matchFilter = isDone;
+        if (currentFilter === 'pending') matchFilter = !isDone;
+        if (currentFilter === 'noted') matchFilter = hasNote;
+        const visible = matchSearch && matchFilter;
+        if (visible) { catHasVisible = true; subHasVisible = true; }
+
+        const tagBg = cat.color + '18';
+        const tagBorder = cat.color + '44';
+        tagsHtml += `<span class="tag${isDone?' done':''}${!visible?' hidden':''}"
+          style="background:${tagBg};border-color:${tagBorder};color:${cat.color}"
+          data-key="${key}" data-topic="${topic}" data-cat="${cat.id}" data-color="${cat.color}" data-cattitle="${cat.title}"
+          onclick="openModal(this)">
+          <span class="tag-check">${isDone?'✓':''}</span>${topic}${hasNote?'<span style="opacity:0.6;font-size:10px">·</span>':''}
+        </span>`;
+      });
+
+      if (subHasVisible || !q) {
+        subsHtml += `<div class="sub-block">
+          <div class="sub-title">${sub.title}</div>
+          <div class="tags">${tagsHtml}</div>
+        </div>`;
+      }
+    });
+
+    if (catHasVisible) {
+      const total = cat.subs.reduce((a,s) => a + s.topics.length, 0);
+      const doneCount = cat.subs.reduce((a,s) => a + s.topics.filter(t => done.has(tagKey(cat.id,t))).length, 0);
+      const pct = Math.round(doneCount/total*100);
+      html += `<div class="cat-block" id="cat-${cat.id}">
+        <div class="cat-header" onclick="toggleCat('body-${cat.id}')">
+          <div class="cat-marker" style="background:${cat.color}"></div>
+          <div class="cat-title">${cat.title}</div>
+          <div class="cat-meta">
+            ${doneCount>0?`<span class="cat-progress">${pct}%</span>`:''}
+            <span>${total} topics</span>
+          </div>
+          <span class="collapse-icon open" id="icon-body-${cat.id}">▶</span>
+        </div>
+        <div class="cat-body" id="body-${cat.id}">${subsHtml}</div>
+      </div>`;
+    }
+  });
+
+  co.innerHTML = html || '<div class="empty">no topics match the current filter</div>';
+}
+
+function toggleCat(bodyId) {
+  const body = document.getElementById(bodyId);
+  const icon = document.getElementById('icon-' + bodyId);
+  if (!body) return;
+  body.classList.toggle('collapsed');
+  if (icon) icon.classList.toggle('open');
+}
+
+function updateStats() {
+  const total = CATS.reduce((a,c) => a + c.subs.reduce((b,s) => b + s.topics.length, 0), 0);
+  const doneCount = done.size;
+  const notedCount = Object.values(notes).filter(n => n.theory||n.impl||n.refs).length;
+  document.getElementById('total-count').textContent = total;
+  document.getElementById('done-count').textContent = doneCount;
+  document.getElementById('noted-count').textContent = notedCount;
+  document.getElementById('prog').style.width = (doneCount/total*100).toFixed(1) + '%';
+}
+
+// ── FILTER ──
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildContent();
+}
+
+function filterAll() { buildContent(); }
+
+// ── MODAL ──
+function openModal(el) {
+  currentTag = el.dataset.key;
+  currentCatColor = el.dataset.color;
+  document.getElementById('modal-title').textContent = el.dataset.topic;
+  document.getElementById('modal-cat').textContent = el.dataset.cattitle;
+  document.getElementById('modal-dot').style.background = el.dataset.color;
+  const n = notes[currentTag] || {};
+  document.getElementById('note-theory').value = n.theory || '';
+  document.getElementById('note-impl').value = n.impl || '';
+  document.getElementById('note-refs').value = n.refs || '';
+  const isDone = done.has(currentTag);
+  const btnDone = document.getElementById('btn-done');
+  btnDone.textContent = isDone ? '✓ completed' : 'mark complete';
+  btnDone.style.color = isDone ? 'var(--green)' : '';
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('save-status').classList.remove('show');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  currentTag = null;
+}
+
+function saveNote() {
+  if (!currentTag) return;
+  notes[currentTag] = {
+    theory: document.getElementById('note-theory').value,
+    impl: document.getElementById('note-impl').value,
+    refs: document.getElementById('note-refs').value
+  };
+  saveState();
+  buildAll();
+  const s = document.getElementById('save-status');
+  s.classList.add('show');
+  setTimeout(() => s.classList.remove('show'), 1800);
+}
+
+function toggleDone() {
+  if (!currentTag) return;
+  if (done.has(currentTag)) {
+    done.delete(currentTag);
+    document.getElementById('btn-done').textContent = 'mark complete';
+    document.getElementById('btn-done').style.color = '';
+  } else {
+    done.add(currentTag);
+    document.getElementById('btn-done').textContent = '✓ completed';
+    document.getElementById('btn-done').style.color = 'var(--green)';
+  }
+  saveState();
+  buildContent();
+  updateStats();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+buildAll();
+</script>
+</body>
+</html>
